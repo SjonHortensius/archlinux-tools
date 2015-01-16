@@ -1,7 +1,19 @@
 #!/bin/bash
-# Author: Sjon Hortensius <sjon@hortensius.net>
-# build a package from aur. Extra options will be passed to makepkg
-# usage: aurBuild [--install] [package]
+if [[ "$1" == "--help" ]]; 
+then
+	cat <<-HelpMessage
+
+		Author: Sjon Hortensius <sjon@hortensius.net>
+
+		build a package from aur. Extra options will be passed to makepkg
+
+		usage: aurBuild [--install] [package]
+
+	HelpMessage
+
+	exit 0
+fi
+
 set -e
 
 # verify our dependencies
