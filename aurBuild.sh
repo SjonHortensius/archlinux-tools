@@ -5,7 +5,9 @@ then
 
 		Author: Sjon Hortensius <sjon@hortensius.net>
 
-		build a package from aur. Extra options will be passed to makepkg
+		Build a package from AUR. Extra options will be passed to makepkg.
+
+		If no arguments are appied packages which are currently not up-to-date will be displayed.
 
 		usage: aurBuild [--install] [package]
 
