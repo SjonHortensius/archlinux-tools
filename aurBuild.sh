@@ -1,15 +1,20 @@
 #!/bin/bash
-if [[ "$1" == "--help" ]]; 
+if [[ "$1" == "--help" ]]
 then
 	cat <<-HelpMessage
 
+		aurBuild version ?? | Build a package from AUR.
 		Author: Sjon Hortensius <sjon@hortensius.net>
 
-		Build a package from AUR. Extra options will be passed to makepkg.
+		usage: 
+		  aurBuild
+		  aurBuild --install <package name> <makepkg options>
 
-		If no arguments are appied packages which are currently not up-to-date will be displayed.
-
-		usage: aurBuild [--install] [package]
+		<no option>			Installed AUR packages wich are currently not up-to-date will be listed.
+		--install 			All installed AUR packages will be updated to the most recent version.
+		--install <package name> 	A specific AUR package will be installed/updated.
+		--install <makepkg options> 	Feed options to makepkg which will be internally executed; Type "makepkg --help" for makepkg options.
+		--help 				Help en information about the script.	  
 
 	HelpMessage
 
