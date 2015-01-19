@@ -1,32 +1,33 @@
 #!/bin/bash
+set -e
+
 if [[ "$1" == "--help" ]]
 then
-	cat <<-HelpMessage
+	cat <<-help
 
-		aurBuild version ?? | Build a package from AUR.
+		aurBuild version 1.0: Build a package from AUR.
 		Author: Sjon Hortensius <sjon@hortensius.net>
 
 		usage: 
-		  aurBuild
-		  aurBuild --install <package name> <makepkg options>
+			aurBuild
+			aurBuild [--install] <package> <makepkg options>
 
-		<no option>			Installed AUR packages wich are currently not up-to-date will be listed.
-		--install 			All installed AUR packages will be updated to the most recent version.
-		--install <package name> 	A specific AUR package will be installed/updated.
-		--install <makepkg options> 	Feed options to makepkg which will be internally executed; Type "makepkg --help" for makepkg options.
-		--help 				Help en information about the script.	  
+		<no option>			All locally installed AUR packages will be listed
+		--install			All locally installed AUR packages will be updated
+		<package>			Build a specific AUR package
+		--install <package>	Build and install a specific package
+		--help				Help and information about the script
 
-	HelpMessage
+		Additional options are passed to makepkg; type "makepkg --help" for makepkg options
+
+	help
 
 	exit 0
 fi
 
-set -e
-
 # verify our dependencies
 which sudo makepkg >/dev/null
 
-[[ $UID -gt 0 ]] && { echo "This script is safer when run as root, it allows us to sudo -u nobody, press <enter> to continue"; read; }
 [[ "$1" == "--install" ]] && { INSTALL=1 ; shift; } || INSTALL=0
 
 if [[ $# -eq 0 ]]
@@ -36,14 +37,16 @@ then
 	do
 		version=`curl -sS "https://aur.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"'`
 		[[ -z $version ]] && { echo -e '\e[1;33m'$pkg' - no longer available, skipping\e[0m' >&2 ; continue ; }
-
 		[[ `vercmp $version $curr` -lt 1 ]] && continue
-		echo -e '\e[1;33m'$pkg' - update availble: '$curr' > '$version'\e[0m'
-		[[ $INSTALL -eq 1 ]] && $0 --install $pkg $OPTS
+
+		echo -e '\e[1;33m'$pkg' - update available: '$curr' > '$version'\e[0m'
+		[[ $INSTALL -eq 1 ]] && $0 --install $pkg
 	done
 
 	exit 0
 fi
+
+[[ $UID -gt 0 ]] && { echo "This script is safer when run as root, it allows us to sudo -u nobody, press <enter> to continue"; read; }
 
 PACKAGE=$1 ; shift
 OPTS="--clean --log $*"
