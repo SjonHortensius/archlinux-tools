@@ -1,7 +1,26 @@
 #!/bin/bash
-# Author: Sjon Hortensius <sjon@hortensius.net>
-# build a package from aur. Extra options will be passed to makepkg
-# usage: aurBuild [--install] [package]
+if [[ "$1" == "--help" ]]
+then
+	cat <<-HelpMessage
+
+		aurBuild version ?? | Build a package from AUR.
+		Author: Sjon Hortensius <sjon@hortensius.net>
+
+		usage: 
+		  aurBuild
+		  aurBuild --install <package name> <makepkg options>
+
+		<no option>			Installed AUR packages wich are currently not up-to-date will be listed.
+		--install 			All installed AUR packages will be updated to the most recent version.
+		--install <package name> 	A specific AUR package will be installed/updated.
+		--install <makepkg options> 	Feed options to makepkg which will be internally executed; Type "makepkg --help" for makepkg options.
+		--help 				Help en information about the script.	  
+
+	HelpMessage
+
+	exit 0
+fi
+
 set -e
 
 # verify our dependencies
