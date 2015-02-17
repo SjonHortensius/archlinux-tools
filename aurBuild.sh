@@ -76,7 +76,7 @@ function getDeps
 		pacman -Q $pkg >/dev/null 2>&1 && continue
 
 		# package is available ?
-		pacman -Ss ^$pkg$ >/dev/null && { depInstall[${#depInstall[*]}]=$pkg ; continue; }
+		pacman -Ss ^${pkg//+/\\+}$ >/dev/null && { depInstall[${#depInstall[*]}]=$pkg ; continue; }
 
 		depBuild[${#depBuild[*]}]=$pkg
 	done
