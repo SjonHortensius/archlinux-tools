@@ -5,7 +5,7 @@ if [[ "$1" == "--help" ]]
 then
 	cat <<-help
 
-		aurBuild version 1.0: Build a package from AUR.
+		aurBuild version 1.1: Build a package from AUR.
 		Author: Sjon Hortensius <sjon@hortensius.net>
 
 		usage: 
@@ -35,11 +35,11 @@ then
 	# check for updates for all foreign packages
 	pacman -Qm | while read pkg curr
 	do
-		version=`curl -sS "https://aur.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"'`
-		[[ -z $version ]] && { echo -e '\e[1;33m'$pkg' - no longer available, skipping\e[0m' >&2 ; continue ; }
+		version=`curl -sS "https://aur4.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"'`
+		[[ -z $version ]] && { echo -e '\e[1;33m'$pkg'\e[0m - no (longer) available, skipping' >&2 ; continue ; }
 		[[ `vercmp $version $curr` -lt 1 ]] && continue
 
-		echo -e '\e[1;33m'$pkg' - update available: '$curr' > '$version'\e[0m'
+		echo -e '\e[1;33m'$pkg'\e[0m - update available: '$curr' > '$version
 		[[ $INSTALL -eq 1 ]] && $0 --install $pkg
 	done
 
@@ -53,14 +53,8 @@ OPTS="--clean --log $*"
 DIR=/var/tmp/aurBuild-$UID
 
 [[ ! -d $DIR ]] && mkdir $DIR
-curl -#S "https://aur.archlinux.org/packages/${PACKAGE:0:2}/$PACKAGE/$PACKAGE.tar.gz" | tar xz -C $DIR
+curl -#S "https://aur4.archlinux.org/cgit/aur.git/snapshot/$PACKAGE.tar.gz" | tar xz -C $DIR
 cd $DIR/$PACKAGE
-
-# use subshell to extract variables safely
-echo -e '#!/bin/bash -r\nsource PKGBUILD\necho ${!1}'>$DIR/$PACKAGE/pkgVar.sh
-chmod +x $DIR/$PACKAGE/pkgVar.sh
-[[ $UID -eq 0 ]] && pkgVar='sudo -u nobody '
-pkgVar="$pkgvar ./pkgVar.sh"
 
 # install all passed dependencies
 function getDeps
@@ -95,10 +89,15 @@ function getDeps
 	echo 
 }
 
-deps=(`$pkgVar 'depends[*]'`)
-buildDeps=(`$pkgVar 'makedepends[*]'`)
-[[ `$pkgVar 'arch'` == "any" ]] && pkgArch='any' || pkgArch=`uname -m`
-pkgFile=$DIR/$PACKAGE/$PACKAGE-`$pkgVar 'pkgver'`-`$pkgVar 'pkgrel'`-$pkgArch.pkg.tar.xz
+# extract variables from SRCINFO
+     deps=(`grep "^	depends =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
+buildDeps=(`grep "^	makedepends =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
+  pkgArch=(`grep "^	arch =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
+   pkgVer=(`grep "^	pkgver =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
+   pkgRel=(`grep "^	pkgrel =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
+
+[[ $pkgArch == "any" ]] && pkgArch='any' || pkgArch=`uname -m`
+pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkgVer-$pkgRel-$pkgArch.pkg.tar.xz
 
 [[ ! -f $pkgFile ]] && getDeps ${buildDeps[*]}
 getDeps ${deps[*]}
