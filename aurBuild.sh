@@ -35,7 +35,7 @@ then
 	# check for updates for all foreign packages
 	pacman -Qm | while read pkg curr
 	do
-		version=`curl -sS "https://aur4.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"'`
+		version=`curl -sS "https://aur.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"'`
 		[[ -z $version ]] && { echo -e '\e[1;33m'$pkg'\e[0m - no (longer) available, skipping' >&2 ; continue ; }
 		[[ `vercmp $version $curr` -lt 1 ]] && continue
 
@@ -53,7 +53,7 @@ OPTS="--clean --log $*"
 DIR=/var/tmp/aurBuild-$UID
 
 [[ ! -d $DIR ]] && mkdir $DIR
-curl -#S "https://aur4.archlinux.org/cgit/aur.git/snapshot/$PACKAGE.tar.gz" | tar xz -C $DIR
+curl -#S "https://aur.archlinux.org/cgit/aur.git/snapshot/$PACKAGE.tar.gz" | tar xz -C $DIR
 cd $DIR/$PACKAGE
 
 # install all passed dependencies
