@@ -4,22 +4,19 @@ set -e
 if [[ "$1" == "--help" ]]
 then
 	cat <<-help
-
 		aurBuild version 1.1: Build a package from AUR.
 		Author: Sjon Hortensius <sjon@hortensius.net>
 
 		usage: 
-			aurBuild
-			aurBuild [--install] <package> <makepkg options>
+		  aurBuild [--install] [--help]
+		    <no option>  List all locally installed AUR packages and their status
+		    --install    Update all locally installed AUR packages
+		    --help       Help and information about the script
 
-		<no option>			All locally installed AUR packages will be listed
-		--install			All locally installed AUR packages will be updated
-		<package>			Build a specific AUR package
-		--install <package>	Build and install a specific package
-		--help				Help and information about the script
-
-		Additional options are passed to makepkg; type "makepkg --help" for makepkg options
-
+		  aurBuild [--install] <package> <makepkg options>
+		    <package>             Build a specific AUR package
+		    --install <package>   Build and install a specific package
+		                          Additional options are passed to makepkg
 	help
 
 	exit 0
