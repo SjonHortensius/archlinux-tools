@@ -35,11 +35,12 @@ then
 	# check for updates for all foreign packages
 	pacman -Qm | while read pkg curr
 	do
+		echo -en '\e[1;33m'$pkg' ('$curr')\e[0m: '
 		version=`curl -sS "https://aur.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"'`
-		[[ -z $version ]] && { echo -e '\e[1;33m'$pkg'\e[0m - no (longer) available, skipping' >&2 ; continue ; }
-		[[ `vercmp $version $curr` -lt 1 ]] && continue
+		[[ -z $version ]] && { echo 'no longer available skipping'; continue; }
+		[[ `vercmp $version $curr` -lt 1 ]] && { echo 'up to date'; continue; }
 
-		echo -e '\e[1;33m'$pkg'\e[0m - update available: '$curr' > '$version
+		echo 'update available: '$version
 		[[ $INSTALL -eq 1 ]] && $0 --install $pkg
 	done
 
@@ -118,6 +119,6 @@ else
 	echo -e '\e[1;33m'$PACKAGE' has already been build; can be found in '$DIR/$PACKAGE/'\e[0m'
 fi
 
-[[ $INSTALL -eq 1 ]] && pacman -U $pkgFile
+[[ $INSTALL -eq 1 ]] && pacman --noconfirm -U $pkgFile
 
 exit 0
