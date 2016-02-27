@@ -32,12 +32,12 @@ then
 	# check for updates for all foreign packages
 	pacman -Qm | while read pkg curr
 	do
-		echo -en '\e[1;33m'$pkg' ('$curr')\e[0m: '
+		echo -en $pkg' '$curr': \e[1;33m'
 		version=`curl -sS "https://aur.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"'`
-		[[ -z $version ]] && { echo 'no longer available skipping'; continue; }
-		[[ `vercmp $version $curr` -lt 1 ]] && { echo 'up to date'; continue; }
+		[[ -z $version ]] && { echo -e 'no longer available\e[0m'; continue; }
+		[[ `vercmp $version $curr` -lt 1 ]] && { echo -e '\e[0mup to date'; continue; }
 
-		echo 'update available: '$version
+		echo -e 'update available: '$version'\e[0m'
 		[[ $INSTALL -eq 1 ]] && $0 --install $pkg
 	done
 
@@ -110,11 +110,15 @@ then
 		makepkg $OPTS >/dev/null
 	fi
 
-	echo -e '\e[1;33m'$PACKAGE' build completed; can be found in '$DIR/$PACKAGE'\e[0m'
-	[[ ${#buildDeps[*]} -gt 0 ]] && echo -e '\e[1;33mSome of these packages might no longer be required: '${buildDeps[*]}'\e[0m'
+	uselessPkg=(`pacman -Qdttq|tr '\n' ' '`)
+	[[ ${#uselessPkg[*]} -gt 0 ]] && echo -ne 'Build completed, these packages are no longer required: \e[1;33m'${uselessPkg[*]}'\e[0m.'
 else
-	echo -e '\e[1;33m'$PACKAGE' has already been build; can be found in '$DIR/$PACKAGE/'\e[0m'
+	echo -ne $PACKAGE'\e[1;33m has already been build.\e[0m'
 fi
+
+echo -e 'Created packages:\e[1;33m'
+find $DIR/$PACKAGE/ -name \*.pkg.tar.xz -print
+echo -en '\e[0m'
 
 [[ $INSTALL -eq 1 ]] && pacman --noconfirm -U $pkgFile
 
