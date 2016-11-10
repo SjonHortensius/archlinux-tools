@@ -65,10 +65,18 @@ function getDeps
 		pkg=${pkg%%[>=<]*}
 
 		# package is installed ?
-		pacman -Q $pkg >/dev/null 2>&1 && continue
+		pacman -Q $pkg &>/dev/null && continue
 
 		# package is available ?
-		pacman -Ss ^${pkg//+/\\+}$ >/dev/null && { depInstall[${#depInstall[*]}]=$pkg ; continue; }
+		unset pkgAvail
+		while read aliasPkg; do
+			# above `pacman -Q $pkg` no longer resolves aliases such as java-runtime. They do get returned from -Ss
+			pacman -Q $aliasPkg &>/dev/null && continue 2
+
+			pkgAvail=1
+		done < <(pacman -Sqs ^${pkg//+/\\+}$)
+
+		[[ $pkgAvail ]] && { depInstall[${#depInstall[*]}]=$pkg ; continue; }
 
 		depBuild[${#depBuild[*]}]=$pkg
 	done
@@ -88,17 +96,17 @@ function getDeps
 }
 
 # extract variables from SRCINFO
-     deps=(`grep "^	depends =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
+     deps=(`grep "^	depends =" $DIR/$PACKAGE/.SRCINFO     | cut -d' ' -f3- | tr '\n' ' '`)
 buildDeps=(`grep "^	makedepends =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
-  pkgArch=(`grep "^	arch =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
-   pkgVer=(`grep "^	pkgver =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
-   pkgRel=(`grep "^	pkgrel =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
+  pkgArch=(`grep "^	arch =" $DIR/$PACKAGE/.SRCINFO        | cut -d' ' -f3- | tr '\n' ' '`)
+   pkgVer=(`grep "^	pkgver =" $DIR/$PACKAGE/.SRCINFO      | cut -d' ' -f3- | tr '\n' ' '`)
+   pkgRel=(`grep "^	pkgrel =" $DIR/$PACKAGE/.SRCINFO      | cut -d' ' -f3- | tr '\n' ' '`)
 
-[[ $pkgArch == "any" ]] && pkgArch='any' || pkgArch=`uname -m`
+[[ $pkgArch != "any" ]] && pkgArch=`uname -m`
 pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkgVer-$pkgRel-$pkgArch.pkg.tar.xz
 
 [[ ! -f $pkgFile ]] && getDeps ${buildDeps[*]}
-getDeps ${deps[*]}
+[[ $1 != '-d' && $1 != '--nodeps' ]] && getDeps ${deps[*]}
 
 if [[ ! -f $pkgFile ]]
 then
