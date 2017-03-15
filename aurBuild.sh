@@ -113,15 +113,15 @@ then
 	if [[ $UID -eq 0 ]]
 	then
 		chown -R nobody: ./
-		sudo -u nobody makepkg $OPTS >/dev/null
+		sudo -u nobody HOME=/tmp makepkg $OPTS >/dev/null
 	else
 		makepkg $OPTS >/dev/null
 	fi
 
 	uselessPkg=(`pacman -Qdttq|tr '\n' ' '`)
-	[[ ${#uselessPkg[*]} -gt 0 ]] && echo -ne 'Build completed, these packages are no longer required: \e[1;33m'${uselessPkg[*]}'\e[0m.'
+	[[ ${#uselessPkg[*]} -gt 0 ]] && echo -ne 'Build completed, these packages are no longer required: \e[1;33m'${uselessPkg[*]}'\e[0m. '
 else
-	echo -ne $PACKAGE'\e[1;33m has already been build.\e[0m'
+	echo -ne $PACKAGE'\e[1;33m has already been build.\e[0m '
 fi
 
 echo -e 'Created packages:\e[1;33m'

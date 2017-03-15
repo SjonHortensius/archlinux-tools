@@ -7,7 +7,7 @@ then
 		service-restart-check version 1.0: Verify if any systemd services need a restart
 		Author: Sjon Hortensius <sjon@hortensius.net>
 
-		usage: 
+		usage:
 		  service-restart-check [--now] [--help]
 		    <no option>  List all systemd services that have been upgraded since starting
 		    --now        Restart all services that have been upgraded
@@ -21,11 +21,12 @@ fi
 
 for file in /etc/systemd/system/*.wants/*.service
 do
+	# inside for-loop so they align with the columns
 	[[ -z $headerDone ]] && { echo -e '\e[1;33mPackage Upgraded Service Last-restart\e[0m'; headerDone=1; }
 
 	service=`readlink $file 2>/dev/null`
 	package=`pacman -Qoq $service` || continue
-	file=`basename $file`
+	file=${file##*/}
 
 	started=`systemctl status -n0 $file | grep Active: | cut -d' ' -f8-10`
 	updated=`pacman -Qi $package | grep '^Install Date' | cut -d: -f2-`
