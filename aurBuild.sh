@@ -101,7 +101,7 @@ buildDeps=(`grep "^	makedepends =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr 
   pkgArch=(`grep "^	arch =" $DIR/$PACKAGE/.SRCINFO        | cut -d' ' -f3- | tr '\n' ' '`)
    pkgVer=(`grep "^	pkgver =" $DIR/$PACKAGE/.SRCINFO      | cut -d' ' -f3- | tr '\n' ' '`)
    pkgRel=(`grep "^	pkgrel =" $DIR/$PACKAGE/.SRCINFO      | cut -d' ' -f3- | tr '\n' ' '`)
- pkgIsVcs=(`grep -qE "^	source = (bzr.*|git.*|hg.*|svn.*)://" $DIR/$PACKAGE/.SRCINFO && echo 1`)
+ pkgIsVcs=(`grep -cE "^	source = (bzr.*|git.*|hg.*|svn.*)://" $DIR/$PACKAGE/.SRCINFO ||:`)
 
 [[ $pkgArch != "any" ]] && pkgArch=`uname -m`
 pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkgVer-$pkgRel-$pkgArch.pkg.tar.xz
@@ -126,10 +126,10 @@ else
 fi
 
 createdPkg=(`find $DIR/$PACKAGE/ -name \*.pkg.tar.xz -print`)
-echo -ne 'Created packages:\e[1;33m${createdPkg[*]}\e[0m'
+echo -ne 'Created packages: \e[1;33m'${createdPkg[*]}'\e[0m\n'
 
 if [[ $INSTALL -eq 1 ]]; then
-	[[ ! -f $pkgFile && ${#created} -eq 1 && $pkgIsVcs ]] pkgFile=${created[0]}
+	[[ ! -f $pkgFile && ${#created} -eq 1 && $pkgIsVcs ]] && pkgFile=${created[0]}
 	pacman --noconfirm -U $pkgFile
 fi
 
