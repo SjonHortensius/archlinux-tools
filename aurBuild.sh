@@ -34,9 +34,9 @@ then
 	pacman -Qm | while read pkg curr
 	do
 		echo -en $pkg' '$curr': \e[1;33m'
-		version=`curl -sS "https://aur.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"'`
+		version=$(curl -sS "https://aur.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"')
 		[[ -z $version ]] && { echo -e 'no longer available\e[0m'; continue; }
-		[[ `vercmp $version $curr` -lt 1 ]] && { echo -e '\e[0mup to date'; continue; }
+		[[ $(vercmp $version $curr) -lt 1 ]] && { echo -e '\e[0mup to date'; continue; }
 
 		echo -e 'update available: '$version'\e[0m'
 		[[ $INSTALL -eq 1 ]] && $0 --install $pkg
@@ -104,10 +104,10 @@ do
 	declare -r pkg_$k
 done
 
-pkgNames=(`grep '^pkgname =' $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3-`)
-pkgIsVcs=(`grep -cE ^$'\t'"source = (bzr.*|git.*|hg.*|svn.*)://" $DIR/$PACKAGE/.SRCINFO ||:`)
+pkgNames=($(grep '^pkgname =' $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3-))
+pkgIsVcs=($(grep -cE ^$'\t'"source = (bzr.*|git.*|hg.*|svn.*)://" $DIR/$PACKAGE/.SRCINFO ||:))
 pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-$pkg_arch.pkg.tar.xz
-[[ $pkg_arch != "any" ]] && pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-`uname -m`.pkg.tar.xz
+[[ $pkg_arch != "any" ]] && pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-$(uname -m).pkg.tar.xz
 
 [[ ! -f $pkgFile ]] && getDeps ${pkg_makedepends[*]}
 [[ $GETDEPS ]] && getDeps ${pkg_depends[*]}
@@ -122,13 +122,13 @@ then
 		makepkg $OPTS >/dev/null
 	fi
 
-	uselessPkg=(`pacman -Qdttq|tr '\n' ' '`)
+	uselessPkg=($(pacman -Qdttq|tr '\n' ' '))
 	[[ ${#uselessPkg[*]} -gt 0 ]] && echo -ne 'Build completed, these packages are no longer required: \e[1;33m'${uselessPkg[*]}'\e[0m. '
 else
 	echo -ne $PACKAGE'\e[1;33m has already been build.\e[0m '
 fi
 
-createdPkg=(`find $DIR/$PACKAGE/ -name \*.pkg.tar.xz -print`)
+createdPkg=($(find $DIR/$PACKAGE/ -name \*.pkg.tar.xz -print))
 echo -ne 'Created packages: \e[1;33m'${createdPkg[*]}'\e[0m\n'
 
 if [[ $INSTALL -eq 1 ]]; then

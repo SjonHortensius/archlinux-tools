@@ -24,16 +24,16 @@ do
 	# inside for-loop so they align with the columns
 	[[ -z $headerDone ]] && { echo -e '\e[1;33mPackage Upgraded Service Last-restart\e[0m'; headerDone=1; }
 
-	service=`readlink $file 2>/dev/null`
-	package=`pacman -Qoq $service` || continue
+	service=$(readlink $file 2>/dev/null)
+	package=$(pacman -Qoq $service) || continue
 	file=${file##*/}
 
-	started=`systemctl status -n0 $file | grep Active: | cut -d' ' -f8-10`
-	updated=`pacman -Qi $package | grep '^Install Date' | cut -d: -f2-`
+	started=$(systemctl status -n0 $file | grep Active: | cut -d' ' -f8-10)
+	updated=$(pacman -Qi $package | grep '^Install Date' | cut -d: -f2-)
 
-	[[ `date -d "$started" +%s` -lt `date -d "$updated" +%s` ]] || continue
+	[[ $(date -d "$started" +%s) -lt $(date -d "$updated" +%s) ]] || continue
 
 	[[ $1 == '--now' ]] && systemctl restart $file && echo -n '* '
 
-	echo $package `date -d "$updated" +'%Y-%m-%d:%H:%M:%S'` $file `date -d "$started" +'%Y-%m-%d:%H:%M:%S'`
+	echo $package $(date -d "$updated" +'%Y-%m-%d:%H:%M:%S') $file $(date -d "$started" +'%Y-%m-%d:%H:%M:%S')
 done|column -t
