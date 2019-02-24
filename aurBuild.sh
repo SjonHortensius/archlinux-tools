@@ -1,9 +1,17 @@
 #!/bin/bash
-set -e
+set -eu
 
-if [[ "$1" == "--help" ]]
+# verify our dependencies
+which sudo makepkg >/dev/null
+
+INSTALL=0;  [[ "${1-}" == "--install" ]] && { INSTALL=1 ; shift; }
+GETDEPS=1;  [[ "${1-}" == "--nodeps" || "${1-}" == "-d"  ]] && { GETDEPS=0 ; shift; }
+
+[[ $UID -gt 0 ]] && { echo "This script is safer when run as root, it allows us to sudo -u nobody, press <enter> to continue anyway"; read; }
+
+if [[ "${1-}" == "--help" ]]
 then
-	cat <<-help
+	cat <<-EOT
 		aurBuild version 1.1: Build a package from AUR.
 		Author: Sjon Hortensius <sjon@hortensius.net>
 
@@ -17,17 +25,10 @@ then
 		    <package>             Build a specific AUR package
 		    --install <package>   Build and install a specific package
 		                          Additional options are passed to makepkg
-	help
+	EOT
 
 	exit 0
-fi
-
-# verify our dependencies
-which sudo makepkg >/dev/null
-
-[[ "$1" == "--install" ]] && { INSTALL=1 ; shift; } || INSTALL=0
-
-if [[ $# -eq 0 ]]
+elif [[ $# -eq 0 ]]
 then
 	# check for updates for all foreign packages
 	pacman -Qm | while read pkg curr
@@ -44,13 +45,12 @@ then
 	exit 0
 fi
 
-[[ $UID -gt 0 ]] && { echo "This script is safer when run as root, it allows us to sudo -u nobody, press <enter> to continue"; read; }
-
 PACKAGE=$1 ; shift
 OPTS="--clean --log $*"
 DIR=/var/tmp/aurBuild-$UID
 
-[[ ! -d $DIR ]] && mkdir $DIR
+#FIXME always empty $DIR so we know all packages in it are ours? Means we can simply pacman -S *.pkg, fixes split packages. But moves install req from caller (when recursive)
+mkdir -p $DIR
 curl -#S "https://aur.archlinux.org/cgit/aur.git/snapshot/$PACKAGE.tar.gz" | tar xz -C $DIR
 cd $DIR/$PACKAGE
 
@@ -68,8 +68,9 @@ function getDeps
 		pacman -Q $pkg &>/dev/null && continue
 
 		# package is available ?
-		unset pkgAvail
-		while read aliasPkg; do
+		pkgAvail=
+		while read aliasPkg
+		do
 			# above `pacman -Q $pkg` no longer resolves aliases such as java-runtime. They do get returned from -Ss
 			pacman -Q $aliasPkg &>/dev/null && continue 2
 
@@ -95,19 +96,21 @@ function getDeps
 	echo 
 }
 
-# extract variables from SRCINFO
-     deps=(`grep "^	depends =" $DIR/$PACKAGE/.SRCINFO     | cut -d' ' -f3- | tr '\n' ' '`)
-buildDeps=(`grep "^	makedepends =" $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3- | tr '\n' ' '`)
-  pkgArch=(`grep "^	arch =" $DIR/$PACKAGE/.SRCINFO        | cut -d' ' -f3- | tr '\n' ' '`)
-   pkgVer=(`grep "^	pkgver =" $DIR/$PACKAGE/.SRCINFO      | cut -d' ' -f3- | tr '\n' ' '`)
-   pkgRel=(`grep "^	pkgrel =" $DIR/$PACKAGE/.SRCINFO      | cut -d' ' -f3- | tr '\n' ' '`)
- pkgIsVcs=(`grep -cE "^	source = (bzr.*|git.*|hg.*|svn.*)://" $DIR/$PACKAGE/.SRCINFO ||:`)
+# import variables from SRCINFO | populates from all subpackages
+for k in {make,}depends arch pkg{ver,rel}
+do
+	declare -a pkg_$k
+	while read v; do eval "pkg_$k+=('"$v"')"; done < <(grep ^$'\t'$k' =' $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3-)
+	declare -r pkg_$k
+done
 
-[[ $pkgArch != "any" ]] && pkgArch=`uname -m`
-pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkgVer-$pkgRel-$pkgArch.pkg.tar.xz
+pkgNames=(`grep '^pkgname =' $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3-`)
+pkgIsVcs=(`grep -cE ^$'\t'"source = (bzr.*|git.*|hg.*|svn.*)://" $DIR/$PACKAGE/.SRCINFO ||:`)
+pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-$pkg_arch.pkg.tar.xz
+[[ $pkg_arch != "any" ]] && pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-`uname -m`.pkg.tar.xz
 
-[[ ! -f $pkgFile ]] && getDeps ${buildDeps[*]}
-[[ $1 != '-d' && $1 != '--nodeps' ]] && getDeps ${deps[*]}
+[[ ! -f $pkgFile ]] && getDeps ${pkg_makedepends[*]}
+[[ $GETDEPS ]] && getDeps ${pkg_depends[*]}
 
 if [[ ! -f $pkgFile ]]
 then
