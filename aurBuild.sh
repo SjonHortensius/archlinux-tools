@@ -97,7 +97,7 @@ function getDeps
 }
 
 # import variables from SRCINFO | populates from all subpackages
-for k in {make,}depends arch pkg{ver,rel}
+for k in {make,check,}depends arch pkg{ver,rel}
 do
 	declare -a pkg_$k
 	while read v; do eval "pkg_$k+=('"$v"')"; done < <(grep ^$'\t'$k' =' $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3-)
@@ -109,7 +109,7 @@ pkgIsVcs=($(grep -cE ^$'\t'"source = (bzr.*|git.*|hg.*|svn.*)://" $DIR/$PACKAGE/
 pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-$pkg_arch.pkg.tar.xz
 [[ $pkg_arch != "any" ]] && pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-$(uname -m).pkg.tar.xz
 
-[[ ! -f $pkgFile ]] && getDeps ${pkg_makedepends[*]}
+[[ ! -f $pkgFile ]] && getDeps ${pkg_makedepends[*]} ${pkg_checkdepends[*]}
 [[ $GETDEPS ]] && getDeps ${pkg_depends[*]}
 
 if [[ ! -f $pkgFile ]]
