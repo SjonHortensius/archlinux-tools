@@ -7,8 +7,6 @@ which sudo makepkg >/dev/null
 INSTALL=0;  [[ "${1-}" == "--install" ]] && { INSTALL=1 ; shift; }
 GETDEPS=1;  [[ "${1-}" == "--nodeps" || "${1-}" == "-d"  ]] && { GETDEPS=0 ; shift; }
 
-[[ $UID -gt 0 ]] && { echo "This script is safer when run as root, it allows us to sudo -u nobody, press <enter> to continue anyway"; read; }
-
 if [[ "${1-}" == "--help" ]]
 then
 	cat <<-EOT
@@ -30,8 +28,10 @@ then
 	exit 0
 elif [[ $# -eq 0 ]]
 then
+	updates=()
+
 	# check for updates for all foreign packages
-	pacman -Qm | while read pkg curr
+	while read pkg curr
 	do
 		echo -en $pkg' '$curr': \e[1;33m'
 		version=$(curl -sS "https://aur.archlinux.org/rpc.php?type=info&arg=$pkg" | tr , '\n' | grep '"Version":' | cut -d: -f2 | tr -d '"')
@@ -39,11 +39,19 @@ then
 		[[ $(vercmp $version $curr) -lt 1 ]] && { echo -e '\e[0mup to date'; continue; }
 
 		echo -e 'update available: '$version'\e[0m'
-		[[ $INSTALL -eq 1 ]] && $0 --install $pkg
+		[[ $INSTALL -eq 1 ]] && updates+=($pkg)
+	done < <(pacman -Qm)
+
+	for pkg in ${updates[*]}
+	do
+		# can't do this directly - read eats stdin
+		$0 --install $pkg
 	done
 
 	exit 0
 fi
+
+[[ $UID -gt 0 ]] && { echo "This script is safer when run as root, it allows us to sudo -u nobody, press <enter> to continue anyway"; read; }
 
 PACKAGE=$1 ; shift
 OPTS="--clean --log $*"
