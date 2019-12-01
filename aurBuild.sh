@@ -95,7 +95,7 @@ function getDeps
 		echo -e '\e[1;33m'$PACKAGE' has unknown dependency '$pkg'; attempting to build from AUR\e[0m'
 		$0 $pkg $OPTS
 
-		created[${#created[*]}]=$DIR/$pkg'/'$pkg'-[0-9]*.pkg.tar.xz'
+		created[${#created[*]}]=$DIR/$pkg'/'$pkg'-[0-9]*.pkg.tar.*'
 	done
 
 	[[ ${#created[*]} -gt 0 ]] && pacman -U --asdep --needed ${created[*]}
@@ -112,10 +112,10 @@ do
 	declare -r pkg_$k
 done
 
+[[ $pkg_arch != "any" ]] && pkgArch=$(uname -m)
 pkgNames=($(grep '^pkgname =' $DIR/$PACKAGE/.SRCINFO | cut -d' ' -f3-))
 pkgIsVcs=($(grep -cE ^$'\t'"source = (bzr.*|git.*|hg.*|svn.*)://" $DIR/$PACKAGE/.SRCINFO ||:))
-pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-$pkg_arch.pkg.tar.xz
-[[ $pkg_arch != "any" ]] && pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-$(uname -m).pkg.tar.xz
+pkgFile=$DIR/$PACKAGE/$PACKAGE-$pkg_pkgver-$pkg_pkgrel-${pkgArch-$pkg_arch}.pkg.tar.*
 
 [[ ! -f $pkgFile ]] && getDeps ${pkg_makedepends[*]} ${pkg_checkdepends[*]}
 [[ $GETDEPS ]] && getDeps ${pkg_depends[*]}
@@ -136,11 +136,11 @@ else
 	echo -ne $PACKAGE'\e[1;33m has already been build.\e[0m '
 fi
 
-createdPkg=($(find $DIR/$PACKAGE/ -name \*.pkg.tar.xz -print))
+createdPkg=($(find $DIR/$PACKAGE/ -name \*.pkg.tar.* -print))
 echo -ne 'Created packages: \e[1;33m'${createdPkg[*]}'\e[0m\n'
 
 if [[ $INSTALL -eq 1 ]]; then
-	[[ ! -f $pkgFile && ${#created} -eq 1 && $pkgIsVcs ]] && pkgFile=${created[0]}
+	[[ ! -f $pkgFile && ${#createdPkg[@]} -eq 1 && $pkgIsVcs ]] && pkgFile=${createdPkg[0]}
 	pacman --noconfirm -U $pkgFile
 fi
 
