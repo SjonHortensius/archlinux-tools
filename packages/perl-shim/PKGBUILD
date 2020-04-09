@@ -1,0 +1,14 @@
+pkgname=perl-shim
+pkgver=1
+pkgrel=1
+pkgdesc="A shim to provide perl to packages that don't really need it"
+arch=('any')
+provides=('perl')
+conflicts=('perl')
+# reversed list of packages that do not need perl
+optdepends=(
+	'rsync: uses perl for rrsync which is rarily used'
+	'openssl: uses perl for c_rehash which is replaced by `openssl rehash`'
+	'git: uses perl for mediawiki and cvs importer'
+	'lm_sensors: uses perl for for detecting sensors'
+)
