@@ -19,28 +19,28 @@ fi
 
 [[ $1 == '--now' ]] && systemctl daemon-reload
 
-for file in /etc/systemd/system/*.wants/*.service
+while read -r name x
 do
 	# inside for-loop so they align with the columns. Prefixed with newline to prevent first column from not being wide enough
 	[[ -z $headerDone ]] && { echo -e '\e[1;33m\nPackage\tUpgraded\tService\tLast-restart\e[0m'; headerDone=1; }
 
-	service=$(readlink $file)
+	# don't restart nspawns
+	[[ $name == systemd-nspawn@* ]] && continue
+
+	path=$(systemctl show -p FragmentPath $name | cut -d= -f2)
 
 	# services in /etc are machine-specific and not owned by a pkg
-	[[ $service == /etc/systemd/system/*.service ]] && continue
+	[[ $path == /etc/systemd/system/* ]] && continue
 
-	package=$(pacman -Qoq $service)
-	file=${file##*/}
+	package=$(pacman -Qoq $path)
 
-	# don't restart nspawns
-	[[ $service == '/usr/lib/systemd/system/systemd-nspawn@.service' ]] && continue
-
-	started=$(systemctl show -p ActiveEnterTimestamp $file | cut -d= -f2)
+	started=$(systemctl show -p ActiveEnterTimestamp $name | cut -d= -f2)
 	updated=$(pacman -Qi $package | grep '^Install Date' | cut -d: -f2-)
 
 	[[ $(date -d "$started" +%s) -lt $(date -d "$updated" +%s) ]] || continue
 
-	[[ $1 == '--now' ]] && systemctl restart $file
+	[[ $1 == '--now' ]] && systemctl restart $name
 
-	printf '%s\t%s\t%s\t%s\n' $package $(date -d "$updated" +'%Y-%m-%d:%H:%M:%S') $file $(date -d "$started" +'%Y-%m-%d:%H:%M:%S')
-done | column -ts $'\t'
+	printf '%s\t%s\t%s\t%s\n' $package $(date -d "$updated" +'%Y-%m-%d:%H:%M:%S') $name $(date -d "$started" +'%Y-%m-%d:%H:%M:%S')
+
+done < <(systemctl --plain --no-legend list-units --type=service --state=running) | column -ts $'\t'
