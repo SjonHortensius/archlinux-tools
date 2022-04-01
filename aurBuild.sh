@@ -75,8 +75,8 @@ function getDeps
 		# package is installed ?
 		pacman -Q $pkg &>/dev/null && continue
 
-		# are we building this dep ? needed for some split packages, eg. php74-snmp depends on php74
-		[[ $pkg == $PACKAGE ]] && continue
+		# are we building this dep ?
+		[[ " ${pkgNames[*]} " =~ " $pkg " ]] && continue
 
 		# package is available ?
 		pkgAvail=
