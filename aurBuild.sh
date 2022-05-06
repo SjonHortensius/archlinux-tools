@@ -34,7 +34,7 @@ then
 	while read pkg curr
 	do
 		echo -en $pkg' '$curr': \e[1;33m'
-		version=$(curl -sS "https://aur.archlinux.org/rpc.php?v=5&type=info&arg=$pkg" | grep -Eo '"Version":"[^"]*"' | cut -d: -f1|tr -d '"')
+		version=$(curl -sS "https://aur.archlinux.org/rpc.php?v=5&type=info&arg=$pkg" | grep -Eo '"Version":"[^"]*"' | cut -d: -f2|tr -d '"')
 		[[ -z $version ]] && { echo -e 'no longer available\e[0m'; continue; }
 		[[ $(vercmp $version $curr) -lt 1 ]] && { echo -e '\e[0mup to date'; continue; }
 
